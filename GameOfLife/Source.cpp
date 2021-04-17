@@ -91,6 +91,11 @@ public:
 			redraw = true;
 		}
 
+		if (GetKey(olc::S).bReleased) {
+			game.scramble();
+			redraw = true;
+		}
+
 		if (!paused && updateWatch.getElapsed() >= updateWait) {
 			redraw = true;
 			game.step();

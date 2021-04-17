@@ -1,52 +1,88 @@
 #include<vector>
+#include<memory>
 #include"BitArray.h"
 #pragma once
 class GameOfLife
 {
+public:
+	struct World {
+		friend class GameOfLife;
+	private:
+		std::shared_ptr<bool[]> data;
+
+		size_t _height, _width;
+
+		bool &ref_get(size_t x, size_t y) {
+			return data[x + y * width()];
+		}
+
+		bool _get(size_t x, size_t y) const {
+			return data[x + y * width()];
+		}
+		void _set(size_t x, size_t y, bool value) {
+			ref_get(x, y) = value;
+		}
+
+		bool outOfBounds(size_t x, size_t y) const {
+			if (x < 0 || width() <= x) { return true; }
+			if (y < 0 || height() <= y) { return true; }
+			return false;
+		}
+
+	private:
+		World(size_t width, size_t height, bool initialize) {
+			data = std::shared_ptr<bool[]>(new bool[width * height]);
+
+			_height = height;
+			_width = width;
+
+			if (initialize) {
+				for (size_t i = 0; i < width * height; ++i) {
+					data[i] = false;
+				}
+			}
+		}
+
+	public:
+		size_t width()  const { return _width; }
+		size_t height() const { return _height; }
+
+		World(size_t width, size_t height) : World(width, height, true) {}
+
+		bool get(size_t x, size_t y) const {
+			if (outOfBounds(x, y)) { return false; }
+			return _get(x, y);
+		}
+
+		void set(size_t x, size_t y, bool value) {
+			if (outOfBounds(x, y)) { return; }
+		    _set(x, y, value);
+		}
+	};
+
 private:
-	std::vector<std::vector<bool>> world;
-	size_t _height;
-
-	void _set(size_t x, size_t y, bool value) {
-		world[x][y] = value;
-	}
-
-	bool _get(size_t x, size_t y) const {
-		return world[x][y];
-	}
+	World world = World(0,0);
 
 public:
 	GameOfLife(size_t width, size_t height) {
-		_height = height;
-		for (size_t i = 0; i < width; ++i) {
-			world.push_back(std::vector<bool>(height));
-			for (size_t j = 0; j < height; ++j) {
-				world[i].push_back(false);
-			}
-		}
+		world = World(width, height);
 	}
 
-	size_t width() const  { return world.size(); }
-	size_t height() const { return _height; }
+	size_t width() const { return world.width(); }
+	size_t height() const { return world.height(); }
 	
 	void set(size_t x, size_t y, bool value) {
-		if (x < 0 || width() <= x)  { return; }
-		if (y < 0 || height() <= y) { return; }
-
-		world[x][y] = value;
+		world.set(x, y, value);
 	}
 	
 	bool get(size_t x, size_t y) const {
-		if (x < 0 || width() <= x)  { return false; }
-		if (y < 0 || height() <= y) { return false; }
-
-		return world[x][y];
+		return world.get(x, y);
 	}
 
 	void reset(bool state = false) {
 		for (size_t x = 0; x < width(); ++x) {
 			for (size_t y = 0; y < height(); ++y) {
-				_set(x, y, state);
+				world.ref_get(x, y) = false;
 			}
 		}
 	}
@@ -54,38 +90,49 @@ public:
 	void scramble() {
 		for (size_t x = 0; x < width(); ++x) {
 			for (size_t y = 0; y < height(); ++y) {
-				_set(x, y, rand());
+				world._set(x, y, std::rand() > RAND_MAX / 2);
 			}
 		}
 	}
 
 	void step() {
-		std::vector<std::vector<bool>> newWorld(width());
-		for (size_t i = 0; i < width(); ++i) {
-			newWorld[i] = std::vector<bool>(height());
-		}
+		World newWorld(width(), height(), false);
+		size_t x, y, largest_x = width() - 1, largest_y = height() - 1;
 
-		for (size_t x = 0; x < width(); ++x) {
-			for (size_t y = 0; y < height(); ++y) {
+		for (x = 0; x < width(); ++x) {
+			for (y = 0; y < height(); ++y) {
 				int neighbors = 0;
-				neighbors +=
-					get(x - 1, y - 1) +
-					get(x    , y - 1) +
-					get(x + 1, y - 1) +
-					get(x + 1, y    ) +
-					get(x + 1, y + 1) +
-					get(x    , y + 1) +
-					get(x - 1, y + 1) +
-					get(x - 1, y    );
-
-				if (neighbors == 3){
-					newWorld[x][y] = true;
-				}
-				else if (neighbors == 2) {
-					newWorld[x][y] = _get(x, y);
+				if (x == 0 || x == largest_x || y == 0 || y == largest_y) {
+					neighbors +=
+						world.get(x - 1, y - 1) +
+						world.get(x, y - 1) +
+						world.get(x + 1, y - 1) +
+						world.get(x + 1, y) +
+						world.get(x + 1, y + 1) +
+						world.get(x, y + 1) +
+						world.get(x - 1, y + 1) +
+						world.get(x - 1, y);
 				}
 				else {
-					newWorld[x][y] = false;
+					neighbors +=
+						world._get(x - 1, y - 1) +
+						world._get(x, y - 1) +
+						world._get(x + 1, y - 1) +
+						world._get(x + 1, y) +
+						world._get(x + 1, y + 1) +
+						world._get(x, y + 1) +
+						world._get(x - 1, y + 1) +
+						world._get(x - 1, y);
+				}
+
+				if (neighbors == 3){
+					newWorld._set(x, y, true);
+				}
+				else if (neighbors == 2) {
+					newWorld._set(x, y, world._get(x, y));
+				}
+				else {
+					newWorld._set(x, y, false);
 				}
 			}
 		}
