@@ -56,25 +56,19 @@ public:
 		for (size_t i = 0; i < width(); ++i) {
 			newWorld[i] = std::vector<bool>(height());
 		}
-		auto find = [&](size_t column, size_t row) -> bool {
-			if (column < 0 || width() <= column)  { return false; }
-			if (row < 0 || height() <= row) { return false; }
-
-			return _get(column, row);
-		};
 
 		for (size_t x = 0; x < width(); ++x) {
 			for (size_t y = 0; y < height(); ++y) {
 				int neighbors = 0;
 				neighbors +=
-					find(x - 1, y - 1) +
-					find(x    , y - 1) +
-					find(x + 1, y - 1) +
-					find(x + 1, y    ) +
-					find(x + 1, y + 1) +
-					find(x    , y + 1) +
-					find(x - 1, y + 1) +
-					find(x - 1, y    );
+					get(x - 1, y - 1) +
+					get(x    , y - 1) +
+					get(x + 1, y - 1) +
+					get(x + 1, y    ) +
+					get(x + 1, y + 1) +
+					get(x    , y + 1) +
+					get(x - 1, y + 1) +
+					get(x - 1, y    );
 
 				if (neighbors == 3){
 					newWorld[x][y] = true;
