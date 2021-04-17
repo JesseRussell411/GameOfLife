@@ -51,6 +51,14 @@ public:
 		}
 	}
 
+	void scramble() {
+		for (size_t x = 0; x < width(); ++x) {
+			for (size_t y = 0; y < height(); ++y) {
+				_set(x, y, rand());
+			}
+		}
+	}
+
 	void step() {
 		std::vector<std::vector<bool>> newWorld(width());
 		for (size_t i = 0; i < width(); ++i) {
