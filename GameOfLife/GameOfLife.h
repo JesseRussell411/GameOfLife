@@ -8,16 +8,16 @@ public:
 	struct World {
 		friend class GameOfLife;
 	private:
-		std::shared_ptr<bool[]> data;
+		std::shared_ptr<std::shared_ptr<bool[]>[]> data;
 
 		size_t _height, _width;
 
 		bool &ref_get(size_t x, size_t y) {
-			return data[x + y * width()];
+			return data[x][y];
 		}
 
 		bool _get(size_t x, size_t y) const {
-			return data[x + y * width()];
+			return data[x][y];
 		}
 		void _set(size_t x, size_t y, bool value) {
 			ref_get(x, y) = value;
@@ -31,14 +31,22 @@ public:
 
 	private:
 		World(size_t width, size_t height, bool initialize) {
-			data = std::shared_ptr<bool[]>(new bool[width * height]);
-
 			_height = height;
 			_width = width;
 
+			data = std::shared_ptr<std::shared_ptr<bool[]>[]>(new std::shared_ptr<bool[]>[width]);
 			if (initialize) {
-				for (size_t i = 0; i < width * height; ++i) {
-					data[i] = false;
+				for (size_t x = 0; x < width; ++x) {
+					data[x] = std::shared_ptr<bool[]>(new bool[height]);
+					for (size_t y = 0; y < height; ++y) {
+						data[x][y] = false;
+					}
+				}
+
+			}
+			else {
+				for (size_t x = 0; x < width; ++x) {
+					data[x] = std::shared_ptr<bool[]>(new bool[height]);
 				}
 			}
 		}
@@ -82,7 +90,7 @@ public:
 	void reset(bool state = false) {
 		for (size_t x = 0; x < width(); ++x) {
 			for (size_t y = 0; y < height(); ++y) {
-				world.ref_get(x, y) = false;
+				world._set(x, y, false);
 			}
 		}
 	}
