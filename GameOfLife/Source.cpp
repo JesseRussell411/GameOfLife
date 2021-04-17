@@ -25,6 +25,7 @@ public:
 	double fps = 60.0;
 	std::chrono::steady_clock::duration updateWait;
 	Stopwatch updateWatch;
+	bool paused = false;
 	
 
 	bool OnUserCreate() override
@@ -77,10 +78,7 @@ public:
 		}
 
 		if (GetKey(olc::SPACE).bReleased) {
-			if (updateWatch.isRunning())
-				updateWatch.stop();
-			else
-				updateWatch.start();
+			paused ^= true;
 		}
 
 		if (GetKey(olc::J).bReleased) {
@@ -93,7 +91,7 @@ public:
 			redraw = true;
 		}
 
-		if (updateWatch.getElapsed() >= updateWait) {
+		if (!paused && updateWatch.getElapsed() >= updateWait) {
 			redraw = true;
 			game.step();
 			updateWatch.restart();
