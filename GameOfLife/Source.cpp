@@ -1,10 +1,9 @@
 #define OLC_PGE_APPLICATION
-#define HEIGHT 800
-#define WIDTH 1600
-#define PIXEL 1
 #include "olcPixelGameEngine.h"
 #include "GameOfLife.h"
 #include "Stopwatch.h"
+#include <iostream>
+#include<string>
 using namespace JesseRussell::Diagnostics;
 
 #include<chrono>
@@ -17,21 +16,34 @@ public:
 	Example()
 	{
 		// Name you application
-		sAppName = "Example";
+		sAppName = "Conway's Game of Life";
 	}
 
 public:
-	GameOfLife game = GameOfLife(WIDTH, HEIGHT);
-	double fps = 60.0;
+	GameOfLife game = GameOfLife(0,0);
+	double fps = 30.0;
 	std::chrono::steady_clock::duration updateWait;
 	Stopwatch updateWatch;
 	bool paused = false;
+
+	void setFps(double value) {
+		fps = value;
+		updateWait = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::milliseconds(1000) / fps);
+	}
 	
 
 	bool OnUserCreate() override
 	{
 		// Called once at the start, so create things here
-		updateWait = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::milliseconds(1000) / fps);
+		game = GameOfLife(ScreenWidth(), ScreenHeight());
+		std::cout <<
+			"Game created with: \n" <<
+			"Width: " << game.width() << "\n" <<
+			"Height: " << game.height() << "\n" <<
+			"Total Cells: " << game.width() * game.height() << "\n" <<
+			"Thread Count: " << game.getThreadCount() << "\n";
+
+		setFps(fps);
 		updateWatch.restart();
 		size_t x, y;
 		for (x = 0; x < game.width(); ++x)
@@ -78,11 +90,21 @@ public:
 		}
 
 		if (GetKey(olc::SPACE).bReleased) {
-			paused ^= true;
+			if (paused) {
+				paused = false;
+				updateWatch.start();
+				std::cout << "unpaused\n";
+			}
+			else {
+				paused = true;
+				updateWatch.stop();
+				std::cout << "paused\n";
+			}
 		}
 
 		if (GetKey(olc::J).bReleased) {
 			game.step();
+			
 			redraw = true;
 		}
 
@@ -96,9 +118,14 @@ public:
 			redraw = true;
 		}
 
-		if (!paused && updateWatch.getElapsed() >= updateWait) {
+		if (GetKey(olc::F).bReleased) {
+			game.reset(true);
 			redraw = true;
+		}
+
+		if (!paused && updateWatch.getElapsed() >= updateWait) {
 			game.step();
+			redraw = true;
 			updateWatch.restart();
 		}
 
@@ -110,10 +137,51 @@ public:
 	}
 };
 
-int main()
+int main(int argc, char *argv[])
 {
+	size_t width = 100, height = 100, pixelWidth = 6, pixelHeight = 6;
+	double fps = 60;
+
+
+	switch (argc) {
+	case 0:
+	case 1:
+		break;
+	case 2:
+		fps = std::stod(argv[1]);
+		break;
+	case 3:
+		width = std::stoi(argv[1]);
+		height = std::stoi(argv[2]);
+		break;
+	case 4:
+		width = std::stoi(argv[1]);
+		height= std::stoi(argv[2]);
+		pixelWidth = std::stoi(argv[3]);
+		pixelHeight = std::stoi(argv[3]);
+		break;
+	case 5:
+		width = std::stoi(argv[1]);
+		height = std::stoi(argv[2]);
+		pixelWidth = std::stoi(argv[3]);
+		pixelHeight = std::stoi(argv[3]);
+		fps = std::stod(argv[4]);
+		break;
+	default:
+	case 6:
+		width = std::stoi(argv[1]);
+		height = std::stoi(argv[2]);
+		pixelWidth = std::stoi(argv[3]);
+		pixelHeight = std::stoi(argv[4]);
+		fps = std::stod(argv[5]);
+	}
 	Example demo;
-	if (demo.Construct(WIDTH, HEIGHT, PIXEL, PIXEL))
+	if (demo.Construct(width, height, pixelWidth, pixelHeight)) {
+		demo.setFps(fps);
 		demo.Start();
+	}
+	else {
+		return 1;
+	}
 	return 0;
 }

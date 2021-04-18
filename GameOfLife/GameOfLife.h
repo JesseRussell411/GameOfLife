@@ -1,5 +1,7 @@
 #include<vector>
 #include<memory>
+#include<thread>
+#include<iostream>
 #include"BitArray.h"
 #pragma once
 class GameOfLife
@@ -70,15 +72,20 @@ public:
 
 private:
 	World world = World(0,0);
-
+	size_t threadCount = 1;
 public:
 	GameOfLife(size_t width, size_t height) {
 		world = World(width, height);
+		threadCount = width * height / 1000000;
+		if (threadCount < 1) { threadCount = 1; }
 	}
 
 	size_t width() const { return world.width(); }
 	size_t height() const { return world.height(); }
 	
+	size_t getThreadCount() const { return threadCount; }
+	void setThreadCount(size_t value) { threadCount = value; }
+
 	void set(size_t x, size_t y, bool value) {
 		world.set(x, y, value);
 	}
@@ -90,7 +97,7 @@ public:
 	void reset(bool state = false) {
 		for (size_t x = 0; x < width(); ++x) {
 			for (size_t y = 0; y < height(); ++y) {
-				world._set(x, y, false);
+				world._set(x, y, state);
 			}
 		}
 	}
@@ -104,11 +111,84 @@ public:
 	}
 
 	void step() {
-		World newWorld(width(), height(), false);
-		size_t x, y, largest_x = width() - 1, largest_y = height() - 1;
+		if (threadCount <= 1) {
+			singlethreadStep();
+		}
+		else {
+			multithreadStep(threadCount);
+		}
+	}
 
-		for (x = 0; x < width(); ++x) {
-			for (y = 0; y < height(); ++y) {
+	void singlethreadStep() {
+		World newWorld(width(), height(), false);
+		size_t x, y;
+
+		partialStep(0, width(), 0, height(), newWorld);
+
+		world = newWorld;
+	}
+
+	void multithreadStep(size_t threadCountTarget) {
+		size_t width = this->width(), height = this->height();
+		bool chunkByWidthNotHeight = width >= height;
+		World newWorld(width, height);
+
+		size_t threadCount, chunkSize, remainder;
+
+		auto part = [&](size_t n) {
+			threadCount = n < threadCountTarget ? n : threadCountTarget;
+			chunkSize = n / threadCount;
+			remainder = n % threadCount;
+			if (remainder != 0) { ++threadCount; }
+		};
+
+		if (chunkByWidthNotHeight) {
+			part(width);
+		}
+		else {
+			part(height);
+		}
+
+
+		std::thread *jobs = new std::thread[threadCount];
+
+		for (size_t i = 0; i < threadCount; ++i) {
+			if (remainder != 0 && i == threadCount - 1) {
+				if (chunkByWidthNotHeight) {
+					jobs[threadCount - 1] = std::thread(
+						[&]() { partialStep(width - remainder, width, 0, height, newWorld); }
+					);
+				}
+				else {
+					jobs[threadCount - 1] = std::thread(
+						[&]() { partialStep(0, width, height - remainder, height, newWorld); }
+					);
+				}
+			}
+			else if (chunkByWidthNotHeight) {
+				jobs[i] = std::thread(
+					[=]() { partialStep(i * chunkSize, i * chunkSize + chunkSize, 0, height, newWorld); }
+				);
+			}
+			else {
+				jobs[i] = std::thread(
+					[=]() { partialStep(0, width, i * chunkSize, i * chunkSize + chunkSize, newWorld); }
+				);
+			}
+		}
+
+		for (size_t i = 0; i < threadCount; ++i) {
+			jobs[i].join();
+		}
+		world = newWorld;
+
+		delete[] jobs;
+	}
+
+	void partialStep(size_t x1, size_t x2, size_t y1, size_t y2, World newWorld) const {
+		size_t x, y, largest_x = width() - 1, largest_y = height() - 1;
+		for (x = x1; x < x2; ++x) {
+			for (y = y1; y < y2; ++y) {
 				int neighbors = 0;
 				if (x == 0 || x == largest_x || y == 0 || y == largest_y) {
 					neighbors +=
@@ -133,7 +213,7 @@ public:
 						world._get(x - 1, y);
 				}
 
-				if (neighbors == 3){
+				if (neighbors == 3) {
 					newWorld._set(x, y, true);
 				}
 				else if (neighbors == 2) {
@@ -144,61 +224,6 @@ public:
 				}
 			}
 		}
-
-		world = newWorld;
-
-
-
-		// lower memory:
-
-		//std::vector<bool> temp1(height());
-		//std::vector<bool> temp2(height());
-		//size_t x, y;
-		//std::vector<bool> &tempa = temp1, &tempb = temp2;
-
-		//auto swapTemp = [&]() {
-		//	auto t = tempa;
-		//	tempa = tempb;
-		//	tempb = t;
-		//};
-
-		//auto find = [&](size_t column, size_t row) -> bool {
-		//	if (column < 0 || width() <= column)  { return false; }
-		//	if (row < 0 || height() <= row) { return false; }
-
-		//	if (column == x - 1) {
-		//		return tempa[row];
-		//	}
-		//	if (column == x && row == y - 1) {
-		//		return tempb[row];
-		//	}
-		//	return _get(column, row);
-		//};
-
-		//for (x = 0; x < width(); ++x) {
-		//	for (y = 0; y < height(); ++y) {
-		//		int neighbors = 0;
-		//		neighbors +=
-		//			find(x - 1, y - 1) +
-		//			find(x    , y - 1) +
-		//			find(x + 1, y - 1) +
-		//			find(x + 1, y    ) +
-		//			find(x + 1, y + 1) +
-		//			find(x    , y + 1) +
-		//			find(x - 1, y + 1) +
-		//			find(x - 1, y    );
-		//		
-		//		tempb[y] = _get(x, y);
-
-		//		if (neighbors < 2 || 3 < neighbors) {
-		//			_set(x, y, false);
-		//		}
-		//		else if (neighbors == 3) {
-		//			_set(x, y, true);
-		//		}
-		//	}
-		//	swapTemp();
-		//}
 	}
 };
 
