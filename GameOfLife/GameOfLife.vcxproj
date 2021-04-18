@@ -145,9 +145,8 @@
     <ClInclude Include="Stopwatch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BitArray.cpp" />
-    <ClCompile Include="GameOfLife.cpp" />
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="StressTest.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

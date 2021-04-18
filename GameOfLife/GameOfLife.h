@@ -2,12 +2,13 @@
 #include<memory>
 #include<thread>
 #include<iostream>
+#include<math.h>
 #include"BitArray.h"
 #pragma once
 class GameOfLife
 {
 public:
-	struct World {
+	class World {
 		friend class GameOfLife;
 	private:
 		std::shared_ptr<std::shared_ptr<bool[]>[]> data;
@@ -76,7 +77,7 @@ private:
 public:
 	GameOfLife(size_t width, size_t height) {
 		world = World(width, height);
-		threadCount = width * height / 1000000;
+		threadCount = std::round((double)width * height / 833333.0);
 		if (threadCount < 1) { threadCount = 1; }
 	}
 

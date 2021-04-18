@@ -32,10 +32,7 @@
     <ClCompile Include="Source.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GameOfLife.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BitArray.cpp">
+    <ClCompile Include="StressTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
