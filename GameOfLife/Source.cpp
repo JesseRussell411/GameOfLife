@@ -139,42 +139,23 @@ public:
 
 int main(int argc, char *argv[])
 {
-	size_t width = 100, height = 100, pixelWidth = 6, pixelHeight = 6;
+	size_t width = 100, height = 100, pixelWidth = 8, pixelHeight = 8;
 	double fps = 60;
 
 
-	switch (argc) {
-	case 0:
-	case 1:
-		break;
-	case 2:
+	if (argc == 2) {
 		fps = std::stod(argv[1]);
-		break;
-	case 3:
+	}
+	if (argc == 3) {
 		width = std::stoi(argv[1]);
 		height = std::stoi(argv[2]);
-		break;
-	case 4:
+	}
+	if (argc >= 4) {
 		width = std::stoi(argv[1]);
 		height= std::stoi(argv[2]);
-		pixelWidth = std::stoi(argv[3]);
-		pixelHeight = std::stoi(argv[3]);
-		break;
-	case 5:
-		width = std::stoi(argv[1]);
-		height = std::stoi(argv[2]);
-		pixelWidth = std::stoi(argv[3]);
-		pixelHeight = std::stoi(argv[3]);
-		fps = std::stod(argv[4]);
-		break;
-	default:
-	case 6:
-		width = std::stoi(argv[1]);
-		height = std::stoi(argv[2]);
-		pixelWidth = std::stoi(argv[3]);
-		pixelHeight = std::stoi(argv[4]);
-		fps = std::stod(argv[5]);
+		fps = std::stod(argv[3]);
 	}
+
 	Example demo;
 	if (demo.Construct(width, height, pixelWidth, pixelHeight)) {
 		demo.setFps(fps);

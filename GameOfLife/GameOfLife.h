@@ -3,6 +3,7 @@
 #include<thread>
 #include<iostream>
 #include<math.h>
+#include<functional>
 #include"BitArray.h"
 #pragma once
 class GameOfLife
@@ -74,12 +75,33 @@ public:
 private:
 	World world = World(0,0);
 	size_t threadCount = 1;
+	std::function<bool(bool state, int neighbors)> rules;
+
 public:
-	GameOfLife(size_t width, size_t height) {
+	std::function<bool(bool state, int neighbors)> getRules() const { return rules; }
+	void setRules(std::function<bool(bool state, int neighbors)> value) { rules = value; }
+
+	void setRulesToDefault() {
+		rules = [](bool state, int neighbors) {
+			if (neighbors == 3) {
+				return true;
+			}
+			else if (neighbors == 2) {
+				return state;
+			}
+			else {
+				return false;
+			}
+		};
+	}
+
+	GameOfLife(size_t width = 100, size_t height = 100) {
 		world = World(width, height);
 		threadCount = std::round((double)width * height / 833333.0);
 		if (threadCount < 1) { threadCount = 1; }
+		setRulesToDefault();
 	}
+	
 
 	size_t width() const { return world.width(); }
 	size_t height() const { return world.height(); }
@@ -214,15 +236,9 @@ public:
 						world._get(x - 1, y);
 				}
 
-				if (neighbors == 3) {
-					newWorld._set(x, y, true);
-				}
-				else if (neighbors == 2) {
-					newWorld._set(x, y, world._get(x, y));
-				}
-				else {
-					newWorld._set(x, y, false);
-				}
+				newWorld._set(x, y, rules(world._get(x, y), neighbors));
+
+				
 			}
 		}
 	}
